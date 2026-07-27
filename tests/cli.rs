@@ -12,10 +12,9 @@ async fn start_server() -> (String, String, JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let address = listener.local_addr().unwrap().to_string();
     let hostname = format!("http://{address}");
+    let app = cli_first_rust_app::app();
     let handle = tokio::spawn(async move {
-        axum::serve(listener, cli_first_rust_app::app())
-            .await
-            .unwrap();
+        axum::serve(listener, app).await.unwrap();
     });
     (hostname, address, handle)
 }

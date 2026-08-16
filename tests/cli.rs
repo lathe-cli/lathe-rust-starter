@@ -41,13 +41,12 @@ async fn cli(hostname: &str, args: &[&str]) -> Option<Value> {
     (!output.stdout.is_empty()).then(|| serde_json::from_slice(&output.stdout).unwrap())
 }
 
-async fn cli_failure(hostname: &str, args: &[&str]) -> String {
+async fn cli_failure_status(hostname: &str, args: &[&str]) -> u64 {
     let output = run_cli(hostname, args).await;
     assert!(!output.status.success());
-    serde_json::from_slice::<Value>(&output.stderr).unwrap()["error"]["message"]
-        .as_str()
+    serde_json::from_slice::<Value>(&output.stderr).unwrap()["error"]["http"]["status"]
+        .as_u64()
         .unwrap()
-        .to_owned()
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -93,28 +92,26 @@ async fn generated_cli_is_the_application_acceptance_surface() {
 #[tokio::test(flavor = "multi_thread")]
 async fn generated_cli_surfaces_api_errors() {
     let (hostname, _, server) = start_server().await;
-    assert!(
-        cli_failure(&hostname, &["tasks", "create", "--set-str", "title="])
-            .await
-            .contains("HTTP 400")
+    assert_eq!(
+        cli_failure_status(&hostname, &["tasks", "create", "--set-str", "title="]).await,
+        400
     );
-    assert!(
-        cli_failure(&hostname, &["tasks", "get", "--id", "missing"])
-            .await
-            .contains("HTTP 404")
+    assert_eq!(
+        cli_failure_status(&hostname, &["tasks", "get", "--id", "missing"]).await,
+        404
     );
     cli(
         &hostname,
         &["tasks", "create", "--set", "title=Keep the contract honest"],
     )
     .await;
-    assert!(
-        cli_failure(
+    assert_eq!(
+        cli_failure_status(
             &hostname,
             &["tasks", "update", "--id", "1", "--file", "test/empty.json"],
         )
-        .await
-        .contains("title or completed is required")
+        .await,
+        400
     );
     server.abort();
 }

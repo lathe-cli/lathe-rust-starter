@@ -2,7 +2,7 @@
 
 A minimal Rust application where the CLI is ready on day one. Change the application, update OpenAPI, and test through the generated `appctl` CLI.
 
-Requires Rust 1.96+ and Go 1.25+.
+Requires Rust 1.96+ and Go 1.26+.
 
 ```sh
 make check
